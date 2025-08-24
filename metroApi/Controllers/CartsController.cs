@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using metroApi.Data;
@@ -8,7 +7,6 @@ namespace metroApi.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(AuthenticationSchemes = "Firebase")]
     public class CartsController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -18,11 +16,17 @@ namespace metroApi.Controllers
             _context = context;
         }
 
-        // GET: api/Carts/userId
+        // GET: api/Carts/userId?firebaseUserId=xyz
         [HttpGet("{userId}")]
-        public async Task<ActionResult<Cart>> GetCart(int userId)
+        public async Task<ActionResult<Cart>> GetCart(int userId, [FromQuery] string firebaseUserId)
         {
-            // TODO: Validate that userId matches Firebase authenticated user (User.FindFirstValue(ClaimTypes.NameIdentifier))
+            // Validate that userId matches the Firebase UID
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.FirebaseUserId == firebaseUserId);
+            if (user == null || user.Id != userId)
+            {
+                return Unauthorized("Invalid user or Firebase UID");
+            }
+
             var cart = await _context.Carts
                 .Include(c => c.Items)
                 .ThenInclude(ci => ci.Product)
@@ -38,7 +42,7 @@ namespace metroApi.Controllers
 
         // POST: api/Carts/add-item
         [HttpPost("add-item")]
-        public async Task<ActionResult<CartItem>> AddItemToCart([FromBody] CartItem item)
+        public async Task<ActionResult<CartItem>> AddItemToCart([FromBody] CartItem item, [FromQuery] string firebaseUserId)
         {
             if (!ModelState.IsValid)
             {
@@ -49,6 +53,13 @@ namespace metroApi.Controllers
             if (cart == null)
             {
                 return NotFound("Cart not found");
+            }
+
+            // Validate user ownership
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.FirebaseUserId == firebaseUserId);
+            if (user == null || cart.UserId != user.Id)
+            {
+                return Unauthorized("Invalid user or Firebase UID");
             }
 
             // Check if item already exists in cart
@@ -66,12 +77,12 @@ namespace metroApi.Controllers
 
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetCart), new { userId = cart.UserId }, item);
+            return CreatedAtAction(nameof(GetCart), new { userId = cart.UserId, firebaseUserId }, item);
         }
 
         // PUT: api/Carts/update-item
         [HttpPut("update-item")]
-        public async Task<IActionResult> UpdateCartItem([FromBody] CartItem item)
+        public async Task<IActionResult> UpdateCartItem([FromBody] CartItem item, [FromQuery] string firebaseUserId)
         {
             if (!ModelState.IsValid)
             {
@@ -79,11 +90,19 @@ namespace metroApi.Controllers
             }
 
             var existingItem = await _context.CartItems
+                .Include(ci => ci.Cart)
                 .FirstOrDefaultAsync(ci => ci.Id == item.Id && ci.CartId == item.CartId);
 
             if (existingItem == null)
             {
                 return NotFound();
+            }
+
+            // Validate user ownership
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.FirebaseUserId == firebaseUserId);
+            if (user == null || existingItem.Cart!.UserId != user.Id)
+            {
+                return Unauthorized("Invalid user or Firebase UID");
             }
 
             existingItem.Quantity = item.Quantity;
@@ -106,12 +125,22 @@ namespace metroApi.Controllers
 
         // DELETE: api/Carts/remove-item/{cartItemId}
         [HttpDelete("remove-item/{cartItemId}")]
-        public async Task<IActionResult> RemoveCartItem(int cartItemId)
+        public async Task<IActionResult> RemoveCartItem(int cartItemId, [FromQuery] string firebaseUserId)
         {
-            var cartItem = await _context.CartItems.FindAsync(cartItemId);
+            var cartItem = await _context.CartItems
+                .Include(ci => ci.Cart)
+                .FirstOrDefaultAsync(ci => ci.Id == cartItemId);
+
             if (cartItem == null)
             {
                 return NotFound();
+            }
+
+            // Validate user ownership
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.FirebaseUserId == firebaseUserId);
+            if (user == null || cartItem.Cart!.UserId != user.Id)
+            {
+                return Unauthorized("Invalid user or Firebase UID");
             }
 
             _context.CartItems.Remove(cartItem);
