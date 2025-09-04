@@ -1,15 +1,36 @@
 using Microsoft.EntityFrameworkCore;
 using metroApi.Data;
 using Microsoft.OpenApi.Models;
+using DotNetEnv; // Add this using for DotNetEnv
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Determine environment
+var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
+
+// Load environment-specific .env file explicitly
+var envFileName = env switch
+{
+    "Production" => ".env.prod",
+    "Development" => ".env",
+    _ => ".env" // default fallback
+};
+
+// Load environment variables from the .env file
+Env.Load(envFileName);
+
+// Get the PostgreSQL connection string from environment variables
+var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
+if (string.IsNullOrEmpty(connectionString))
+{
+    throw new Exception("Connection string not found. Ensure the .env file is correctly configured and placed in the project root.");
+}
 // Add services to the container.
 builder.Services.AddControllers();
 
 // Add Entity Framework Core with SQL Server (replace with UseSqlite or other provider when ready)
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(connectionString));
 
 // Add Swagger services
 builder.Services.AddEndpointsApiExplorer();
