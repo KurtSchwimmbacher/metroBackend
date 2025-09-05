@@ -1,34 +1,31 @@
 using Microsoft.EntityFrameworkCore;
 using metroApi.Data;
 using Microsoft.OpenApi.Models;
-using DotNetEnv; // Add this using for DotNetEnv
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Determine environment
 var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
 
-// Load environment-specific .env file explicitly
-var envFileName = env switch
+// Load .env only in Development environment
+if (env == "Development")
 {
-    "Production" => ".env.prod",
-    "Development" => ".env",
-    _ => ".env" // default fallback
-};
+    // Load .env file for local dev (make sure file exists in project root)
+    DotNetEnv.Env.Load(".env");
+}
 
-// Load environment variables from the .env file
-Env.Load(envFileName);
+// Get the PostgreSQL connection string properly from configuration
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-// Get the PostgreSQL connection string from environment variables
-var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
 if (string.IsNullOrEmpty(connectionString))
 {
-    throw new Exception("Connection string not found. Ensure the .env file is correctly configured and placed in the project root.");
+    throw new Exception("Connection string not found. Ensure environment variables or appsettings are properly configured.");
 }
+
 // Add services to the container.
 builder.Services.AddControllers();
 
-// Add Entity Framework Core with SQL Server (replace with UseSqlite or other provider when ready)
+// Configure Entity Framework Core with PostgreSQL
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
 
@@ -54,19 +51,15 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    // Enable Swagger middleware in Development environment
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "Metro API v1");
-        c.RoutePrefix = "swagger"; // Access Swagger UI at /swagger
+        c.RoutePrefix = "swagger";
     });
 }
 
-// Use HTTPS redirection (optional, comment out if not needed)
 app.UseHttpsRedirection();
-
-// Map controller endpoints
 app.MapControllers();
 
 app.Run();
