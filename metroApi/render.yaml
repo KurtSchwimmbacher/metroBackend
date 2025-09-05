@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: metro-api
+    name: metroapi-webapi
     env: docker
     plan: free # or starter, depending on your choice
     dockerfilePath: ./Dockerfile
