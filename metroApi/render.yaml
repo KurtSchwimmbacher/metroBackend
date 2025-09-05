@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: metro-api
+    env: docker
+    plan: free # or starter, depending on your choice
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: ConnectionStrings__DefaultConnection
+        sync: false # means Render won't auto-populate this, you’ll set it in the dashboard

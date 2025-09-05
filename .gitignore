@@ -54,3 +54,4 @@ TestResult.xml
 nunit-*.xml
 .env.prod
 metroApi/.env
+metroApi/appsettings.Production.json
