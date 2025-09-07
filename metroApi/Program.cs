@@ -4,32 +4,26 @@ using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Determine environment
 var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
 
-// Load .env only in Development environment
 if (env == "Development")
 {
-    // Load .env file for local dev (make sure file exists in project root)
     DotNetEnv.Env.Load(".env");
 }
 
-// Get the PostgreSQL connection string properly from configuration
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+Console.WriteLine($"[DEBUG] Connection string: '{connectionString}'");
 
 if (string.IsNullOrEmpty(connectionString))
 {
     throw new Exception("Connection string not found. Ensure environment variables or appsettings are properly configured.");
 }
 
-// Add services to the container.
 builder.Services.AddControllers();
-
-// Configure Entity Framework Core with PostgreSQL
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
 
-// Add Swagger services
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -48,7 +42,12 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate();
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
