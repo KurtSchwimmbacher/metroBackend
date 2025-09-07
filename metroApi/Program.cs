@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using metroApi.Data;
 using Microsoft.OpenApi.Models;
+using Npgsql;  // Add this for NpgsqlConnectionStringBuilder
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,6 +19,18 @@ Console.WriteLine($"[DEBUG] Connection string: '{connectionString}'");
 if (string.IsNullOrEmpty(connectionString))
 {
     throw new Exception("Connection string not found. Ensure environment variables or appsettings are properly configured.");
+}
+
+// Validate the format of the connection string before using it
+try
+{
+    var npgsqlBuilder = new NpgsqlConnectionStringBuilder(connectionString);
+    // If this succeeds, the connection string is well formed
+    Console.WriteLine("[DEBUG] Connection string format is valid.");
+}
+catch (Exception ex)
+{
+    throw new Exception($"Connection string format validation failed: {ex.Message}");
 }
 
 builder.Services.AddControllers();
