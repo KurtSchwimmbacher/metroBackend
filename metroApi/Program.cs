@@ -41,6 +41,15 @@ builder.Services.AddCors(options =>
     {
         policy.AllowAnyOrigin()
               .AllowAnyHeader()
+              .AllowAnyMethod()
+              .SetIsOriginAllowed(origin => true); // Additional safety for any origin
+    });
+    
+    // Add a default policy as well
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyHeader()
               .AllowAnyMethod();
     });
 });
@@ -75,9 +84,19 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// Use open CORS policy
+// Add debugging middleware to log requests
+app.Use(async (context, next) =>
+{
+    Console.WriteLine($"[CORS DEBUG] Request from origin: {context.Request.Headers.Origin}");
+    Console.WriteLine($"[CORS DEBUG] Request method: {context.Request.Method}");
+    Console.WriteLine($"[CORS DEBUG] Request path: {context.Request.Path}");
+    await next();
+});
+
+// Use open CORS policy - MUST be before UseAuthorization
 app.UseCors("OpenCors");
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
