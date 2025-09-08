@@ -34,6 +34,26 @@ catch (Exception ex)
 }
 
 builder.Services.AddControllers();
+
+// Add CORS services
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowReactApp", policy =>
+    {
+        // Allow localhost for development
+        policy.WithOrigins("http://localhost:3000", "http://localhost:3001", "http://127.0.0.1:3000", "http://127.0.0.1:3001")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+        
+        // For production, you can add your frontend domain here
+        // policy.WithOrigins("https://your-frontend-domain.com")
+        //       .AllowAnyHeader()
+        //       .AllowAnyMethod()
+        //       .AllowCredentials();
+    });
+});
+
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
 
@@ -72,6 +92,10 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// Enable CORS
+app.UseCors("AllowReactApp");
+
 app.MapControllers();
 
 app.Run();
