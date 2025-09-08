@@ -40,17 +40,28 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp", policy =>
     {
-        // Allow localhost for development
-        policy.WithOrigins("http://localhost:3000", "http://localhost:3001", "http://127.0.0.1:3000", "http://127.0.0.1:3001")
+        var allowedOrigins = new List<string>
+        {
+            // Development origins
+            "http://localhost:3000",
+            "http://localhost:3001", 
+            "http://localhost:3003",
+            "http://127.0.0.1:3000",
+            "http://127.0.0.1:3001",
+            "http://127.0.0.1:3003"
+        };
+
+        // Add production frontend URL from environment variable if available
+        var frontendUrl = Environment.GetEnvironmentVariable("FRONTEND_URL");
+        if (!string.IsNullOrEmpty(frontendUrl))
+        {
+            allowedOrigins.Add(frontendUrl);
+        }
+
+        policy.WithOrigins(allowedOrigins.ToArray())
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
-        
-        // For production, you can add your frontend domain here
-        // policy.WithOrigins("https://your-frontend-domain.com")
-        //       .AllowAnyHeader()
-        //       .AllowAnyMethod()
-        //       .AllowCredentials();
     });
 });
 
