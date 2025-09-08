@@ -25,7 +25,6 @@ if (string.IsNullOrEmpty(connectionString))
 try
 {
     var npgsqlBuilder = new NpgsqlConnectionStringBuilder(connectionString);
-    // If this succeeds, the connection string is well formed
     Console.WriteLine("[DEBUG] Connection string format is valid.");
 }
 catch (Exception ex)
@@ -60,8 +59,8 @@ builder.Services.AddCors(options =>
 
         policy.WithOrigins(allowedOrigins.ToArray())
               .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials();
+              .AllowAnyMethod();
+              // Only add .AllowCredentials() if you’re using cookies/session auth
     });
 });
 
@@ -104,8 +103,10 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// Enable CORS
+// Enable CORS before controllers
 app.UseCors("AllowReactApp");
+
+app.UseAuthorization();
 
 app.MapControllers();
 
