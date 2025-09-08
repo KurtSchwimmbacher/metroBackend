@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using metroApi.Data;
 using Microsoft.OpenApi.Models;
-using Npgsql;  // Add this for NpgsqlConnectionStringBuilder
+using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,7 +21,7 @@ if (string.IsNullOrEmpty(connectionString))
     throw new Exception("Connection string not found. Ensure environment variables or appsettings are properly configured.");
 }
 
-// Validate the format of the connection string before using it
+// Validate the format of the connection string
 try
 {
     var npgsqlBuilder = new NpgsqlConnectionStringBuilder(connectionString);
@@ -34,33 +34,14 @@ catch (Exception ex)
 
 builder.Services.AddControllers();
 
-// Add CORS services
+// Open CORS policy (allow all)
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowReactApp", policy =>
+    options.AddPolicy("OpenCors", policy =>
     {
-        var allowedOrigins = new List<string>
-        {
-            // Development origins
-            "http://localhost:3000",
-            "http://localhost:3001", 
-            "http://localhost:3003",
-            "http://127.0.0.1:3000",
-            "http://127.0.0.1:3001",
-            "http://127.0.0.1:3003"
-        };
-
-        // Add production frontend URL from environment variable if available
-        var frontendUrl = Environment.GetEnvironmentVariable("FRONTEND_URL");
-        if (!string.IsNullOrEmpty(frontendUrl))
-        {
-            allowedOrigins.Add(frontendUrl);
-        }
-
-        policy.WithOrigins(allowedOrigins.ToArray())
+        policy.AllowAnyOrigin()
               .AllowAnyHeader()
               .AllowAnyMethod();
-              // Only add .AllowCredentials() if you’re using cookies/session auth
     });
 });
 
@@ -73,18 +54,13 @@ builder.Services.AddSwaggerGen(c =>
     c.SwaggerDoc("v1", new OpenApiInfo
     {
         Title = "Metro API",
-        Version = "v1",
-        Description = "A simple ASP.NET Core Web API for Metro Backend",
-        Contact = new OpenApiContact
-        {
-            Name = "Your Name",
-            Email = "your.email@example.com"
-        }
+        Version = "v1"
     });
 });
 
 var app = builder.Build();
 
+// Run migrations on startup
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -94,17 +70,13 @@ using (var scope = app.Services.CreateScope())
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Metro API v1");
-        c.RoutePrefix = "swagger";
-    });
+    app.UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();
 
-// Enable CORS before controllers
-app.UseCors("AllowReactApp");
+// Use open CORS policy
+app.UseCors("OpenCors");
 
 app.UseAuthorization();
 
