@@ -62,6 +62,9 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
+Console.WriteLine($"[DEBUG] ASPNETCORE_ENVIRONMENT = {app.Environment.EnvironmentName}"); //checking environment
+
+
 // Run migrations on startup
 using (var scope = app.Services.CreateScope())
 {
