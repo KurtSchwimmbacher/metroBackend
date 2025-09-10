@@ -75,12 +75,15 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
-
 app.UseRouting(); //Must come before UseCors
 
 // Use named CORS policy early in the pipeline to enable CORS for all endpoints
 app.UseCors(corsPolicyName);
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 // Debug logging to ensure CORS requests are hitting backend
 app.Use(async (context, next) =>
