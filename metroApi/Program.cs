@@ -34,7 +34,7 @@ catch (Exception ex)
 
 builder.Services.AddControllers();
 
-// Named CORS policy that allows any origin, header, and method
+// Define a named CORS policy that allows all origins, headers, and methods
 const string corsPolicyName = "AllowAll";
 
 builder.Services.AddCors(options =>
@@ -77,10 +77,10 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// Use the named CORS policy - must be before routing and authorization
+// Use named CORS policy early in the pipeline to enable CORS for all endpoints
 app.UseCors(corsPolicyName);
 
-// Add debugging middleware to log requests
+// Debug logging to ensure CORS requests are hitting backend
 app.Use(async (context, next) =>
 {
     Console.WriteLine($"[CORS DEBUG] Request from origin: {context.Request.Headers.Origin}");
