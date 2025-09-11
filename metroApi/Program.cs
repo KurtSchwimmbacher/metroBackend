@@ -32,7 +32,12 @@ catch (Exception ex)
     throw new Exception($"Connection string format validation failed: {ex.Message}");
 }
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.Preserve;
+    });
+
 
 // Define a named CORS policy that allows all origins, headers, and methods
 const string corsPolicyName = "AllowAll";
