@@ -32,14 +32,14 @@ catch (Exception ex)
     throw new Exception($"Connection string format validation failed: {ex.Message}");
 }
 
+// Add controllers and configure JSON options for cycle reference handling
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.Preserve;
+        options.JsonSerializerOptions.WriteIndented = true; // optional for readability
     });
 
-
-// Define a named CORS policy that allows all origins, headers, and methods
 const string corsPolicyName = "AllowAll";
 
 builder.Services.AddCors(options =>
@@ -47,8 +47,8 @@ builder.Services.AddCors(options =>
     options.AddPolicy(corsPolicyName, policy =>
     {
         policy.AllowAnyOrigin()
-              .AllowAnyHeader()
-              .AllowAnyMethod();
+            .AllowAnyHeader()
+            .AllowAnyMethod();
     });
 });
 
@@ -67,29 +67,28 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-Console.WriteLine($"[DEBUG] ASPNETCORE_ENVIRONMENT = {app.Environment.EnvironmentName}"); //checking environment
+Console.WriteLine($"[DEBUG] ASPNETCORE_ENVIRONMENT = {app.Environment.EnvironmentName}");
 
-
-// Run migrations on startup
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.Migrate();
-}
-
+// Development error page
 if (app.Environment.IsDevelopment())
 {
+    app.UseDeveloperExceptionPage();
+
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+else
+{
+    // Production exception handler (redirect, etc.)
+    app.UseExceptionHandler("/Error");
+    app.UseHsts();
+
+    app.UseHttpsRedirection();
+}
 
 app.UseRouting();
-app.UseCors(corsPolicyName);
 
-if (!app.Environment.IsDevelopment())
-{
-    //app.UseHttpsRedirection();
-}
+app.UseCors(corsPolicyName);
 
 // Debug logging middleware for CORS requests
 app.Use(async (context, next) =>
@@ -105,4 +104,21 @@ app.Use(async (context, next) =>
 });
 
 app.MapControllers();
+
+// Run EF Core migrations on startup
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    try
+    {
+        db.Database.Migrate();
+        Console.WriteLine("[DEBUG] Database migration applied successfully.");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[ERROR] Database migration failed: {ex.Message}");
+        throw;
+    }
+}
+
 app.Run();
