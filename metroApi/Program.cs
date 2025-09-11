@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using metroApi.Data;
 using Microsoft.OpenApi.Models;
 using Npgsql;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,11 +35,12 @@ catch (Exception ex)
 
 // Add controllers and configure JSON options for cycle reference handling
 builder.Services.AddControllers()
-    .AddJsonOptions(options =>
-    {
-        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.Preserve;
-        options.JsonSerializerOptions.WriteIndented = true; // optional for readability
-    });
+  .AddJsonOptions(options =>
+  {
+      options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+      options.JsonSerializerOptions.WriteIndented = true; // optional for readability
+  });
+
 
 const string corsPolicyName = "AllowAll";
 
@@ -53,7 +55,9 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(connectionString));
+    options.UseNpgsql(connectionString)
+           .UseLazyLoadingProxies(false)); // or true to enable
+
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
