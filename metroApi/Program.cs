@@ -128,4 +128,6 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+Console.WriteLine("[DEBUG] Final Program.cs is running with IgnoreCycles JSON options");
+
 app.Run();
