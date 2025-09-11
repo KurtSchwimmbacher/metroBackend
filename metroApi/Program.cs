@@ -84,23 +84,25 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseRouting();
-
 app.UseCors(corsPolicyName);
 
 if (!app.Environment.IsDevelopment())
 {
-    app.UseHttpsRedirection();
+    //app.UseHttpsRedirection();
 }
 
 // Debug logging middleware for CORS requests
 app.Use(async (context, next) =>
 {
-    Console.WriteLine($"[CORS DEBUG] Request from origin: {context.Request.Headers.Origin}");
-    Console.WriteLine($"[CORS DEBUG] Request method: {context.Request.Method}");
-    Console.WriteLine($"[CORS DEBUG] Request path: {context.Request.Path}");
+    if (context.Request.Method == HttpMethods.Options)
+    {
+        Console.WriteLine("[DEBUG] Handling OPTIONS preflight request");
+    }
+    Console.WriteLine($"[CORS DEBUG] Origin: {context.Request.Headers.Origin}");
+    Console.WriteLine($"[CORS DEBUG] Method: {context.Request.Method}");
+    Console.WriteLine($"[CORS DEBUG] Path: {context.Request.Path}");
     await next();
 });
 
 app.MapControllers();
-
 app.Run();
