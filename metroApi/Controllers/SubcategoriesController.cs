@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using metroApi.Data;
 using metroApi.Models;
+using metroApi.Models.DTOs;
 
 namespace metroApi.Controllers
 {
@@ -18,12 +19,28 @@ namespace metroApi.Controllers
 
         // GET: api/Subcategories
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Subcategory>>> GetSubcategories()
+        public async Task<ActionResult<IEnumerable<SubcategoryDto>>> GetSubcategories()
         {
-            return await _context.Subcategories
-                .Include(s => s.Category)
-                .Include(s => s.Products)
-                .ToListAsync();
+            try
+            {
+                var subcategories = await _context.Subcategories
+                    .Include(s => s.Category)
+                    .Select(s => new SubcategoryDto
+                    {
+                        Id = s.Id,
+                        Name = s.Name,
+                        CategoryId = s.CategoryId,
+                        CategoryName = s.Category != null ? s.Category.Name : string.Empty
+                    })
+                    .ToListAsync();
+
+                return Ok(subcategories);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error fetching subcategories: {ex.Message}");
+                return StatusCode(500, "An error occurred while fetching subcategories");
+            }
         }
 
         // GET: api/Subcategories/5
