@@ -3,6 +3,7 @@ using metroApi.Data;
 using Microsoft.OpenApi.Models;
 using Npgsql;
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Http.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,12 +35,12 @@ catch (Exception ex)
 }
 
 // Add controllers and configure JSON options for cycle reference handling
-builder.Services.AddControllers()
-  .AddJsonOptions(options =>
-  {
-      options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.Preserve;
-      options.JsonSerializerOptions.WriteIndented = true; // optional for readability
-  });
+builder.Services.Configure<JsonOptions>(options =>
+{
+    options.SerializerOptions.ReferenceHandler = ReferenceHandler.Preserve;
+    options.SerializerOptions.WriteIndented = true;
+});
+
 
 
 const string corsPolicyName = "AllowAll";
