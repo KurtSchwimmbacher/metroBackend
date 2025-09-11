@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using metroApi.Data;
 using metroApi.Models;
+using Microsoft.Extensions.Logging;
 
 namespace metroApi.Controllers
 {
@@ -10,35 +11,55 @@ namespace metroApi.Controllers
     public class CategoriesController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly ILogger<CategoriesController> _logger;
 
-        public CategoriesController(AppDbContext context)
+        public CategoriesController(AppDbContext context, ILogger<CategoriesController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         // GET: api/Categories
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Category>>> GetCategories()
         {
-            return await _context.Categories
-                .Include(c => c.Subcategories)
-                .ToListAsync();
+            try
+            {
+                var categories = await _context.Categories
+                    .Include(c => c.Subcategories)
+                    .ToListAsync();
+
+                return Ok(categories);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching categories");
+                return StatusCode(500, "Internal server error while fetching categories");
+            }
         }
 
         // GET: api/Categories/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Category>> GetCategory(int id)
         {
-            var category = await _context.Categories
-                .Include(c => c.Subcategories)
-                .FirstOrDefaultAsync(c => c.Id == id);
-
-            if (category == null)
+            try
             {
-                return NotFound();
-            }
+                var category = await _context.Categories
+                   .Include(c => c.Subcategories)
+                   .FirstOrDefaultAsync(c => c.Id == id);
 
-            return category;
+                if (category == null)
+                {
+                    return NotFound();
+                }
+
+                return Ok(category);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error fetching category with id {id}");
+                return StatusCode(500, "Internal server error while fetching category");
+            }
         }
 
         // POST: api/Categories
