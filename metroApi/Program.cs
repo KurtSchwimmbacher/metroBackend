@@ -43,7 +43,7 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.WriteIndented = true;
     });
 
-
+Console.WriteLine("[DEBUG] JSON ReferenceHandler: IgnoreCycles applied");
 
 const string corsPolicyName = "AllowAll";
 
