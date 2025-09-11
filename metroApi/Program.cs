@@ -78,17 +78,16 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseRouting(); //Must come before UseCors
+app.UseRouting();
 
-// Use named CORS policy early in the pipeline to enable CORS for all endpoints
 app.UseCors(corsPolicyName);
 
-if (app.Environment.IsDevelopment())
+if (!app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
 }
 
-// Debug logging to ensure CORS requests are hitting backend
+// Debug logging middleware for CORS requests
 app.Use(async (context, next) =>
 {
     Console.WriteLine($"[CORS DEBUG] Request from origin: {context.Request.Headers.Origin}");
