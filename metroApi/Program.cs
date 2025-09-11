@@ -37,7 +37,7 @@ catch (Exception ex)
 builder.Services.AddControllers()
   .AddJsonOptions(options =>
   {
-      options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+      options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.Preserve;
       options.JsonSerializerOptions.WriteIndented = true; // optional for readability
   });
 
