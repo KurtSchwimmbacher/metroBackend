@@ -85,6 +85,33 @@ namespace metroApi.Controllers
             }
         }
 
+        // GET: api/Categories/{categoryId}/Subcategories
+        [HttpGet("{categoryId}/Subcategories")]
+        public async Task<ActionResult<IEnumerable<SubcategoryDto>>> GetSubcategoriesByCategoryId(int categoryId)
+        {
+            try
+            {
+                var subcategories = await _context.Subcategories
+                    .Where(s => s.CategoryId == categoryId)
+                    .Select(s => new SubcategoryDto
+                    {
+                        Id = s.Id,
+                        Name = s.Name,
+                        CategoryId = s.CategoryId,
+                        CategoryName = s.Category != null ? s.Category.Name : string.Empty
+                    })
+                    .ToListAsync();
+
+                return Ok(subcategories);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error fetching subcategories for category {categoryId}: {ex.Message}");
+                return StatusCode(500, "An error occurred while fetching subcategories");
+            }
+        }
+
+
         // POST: api/Categories
         [HttpPost]
         public async Task<ActionResult<Category>> CreateCategory([FromBody] Category category)
