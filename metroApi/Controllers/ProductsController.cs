@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using metroApi.Data;
 using metroApi.Models;
+using metroApi.Models.DTOs;
 
 namespace metroApi.Controllers
 {
@@ -10,24 +11,28 @@ namespace metroApi.Controllers
     public class ProductsController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public ProductsController(AppDbContext context)
+        public ProductsController(AppDbContext context, IHttpContextAccessor httpContextAccessor)
         {
             _context = context;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         // GET: api/Products
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Product>>> GetProducts()
+        public async Task<ActionResult<IEnumerable<ProductDto>>> GetProducts()
         {
-            return await _context.Products
+            var products = await _context.Products
                 .Include(p => p.Subcategory)
                 .ToListAsync();
+
+            return products.Select(p => MapToDto(p)).ToList();
         }
 
         // GET: api/Products/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Product>> GetProduct(int id)
+        public async Task<ActionResult<ProductDto>> GetProduct(int id)
         {
             var product = await _context.Products
                 .Include(p => p.Subcategory)
@@ -38,22 +43,34 @@ namespace metroApi.Controllers
                 return NotFound();
             }
 
-            return product;
+            return MapToDto(product);
         }
 
         // POST: api/Products
         [HttpPost]
-        public async Task<ActionResult<Product>> CreateProduct([FromBody] Product product)
+        public async Task<ActionResult<ProductDto>> CreateProduct([FromBody] ProductCreateDto productDto)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
 
+            var product = new Product
+            {
+                Name = productDto.Name,
+                Description = productDto.Description,
+                Price = productDto.Price,
+                Features = productDto.Features,
+                Applications = productDto.Applications,
+                Advantages = productDto.Advantages,
+                SubcategoryId = productDto.SubcategoryId,
+                ImageUrl = string.Empty // Will be set when image is uploaded
+            };
+
             _context.Products.Add(product);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetProduct), new { id = product.Id }, product);
+            return CreatedAtAction(nameof(GetProduct), new { id = product.Id }, MapToDto(product));
         }
 
         // PUT: api/Products/5
@@ -102,6 +119,36 @@ namespace metroApi.Controllers
         private bool ProductExists(int id)
         {
             return _context.Products.Any(e => e.Id == id);
+        }
+
+        private ProductDto MapToDto(Product product)
+        {
+            var request = _httpContextAccessor.HttpContext?.Request;
+            var baseUrl = $"{request?.Scheme}://{request?.Host}";
+            
+            return new ProductDto
+            {
+                Id = product.Id,
+                Name = product.Name,
+                Description = product.Description,
+                Price = product.Price,
+                Features = product.Features,
+                Applications = product.Applications,
+                Advantages = product.Advantages,
+                ImageUrl = !string.IsNullOrEmpty(product.ImageUrl) 
+                    ? $"{baseUrl}{product.ImageUrl}" 
+                    : string.Empty,
+                ImageFileName = !string.IsNullOrEmpty(product.ImageUrl) 
+                    ? Path.GetFileName(product.ImageUrl) 
+                    : string.Empty,
+                SubcategoryId = product.SubcategoryId,
+                Subcategory = product.Subcategory != null ? new SubcategoryDto
+                {
+                    Id = product.Subcategory.Id,
+                    Name = product.Subcategory.Name,
+                    CategoryId = product.Subcategory.CategoryId
+                } : null
+            };
         }
     }
 }

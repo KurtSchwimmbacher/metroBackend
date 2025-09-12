@@ -4,6 +4,7 @@ using Microsoft.OpenApi.Models;
 using Npgsql;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Http.Json;
+using metroApi.Controllers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -64,6 +65,9 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // Add HttpClient for EmailJS
 builder.Services.AddHttpClient<OrderEmailController>();
 
+// Add HttpContextAccessor for image URL generation
+builder.Services.AddHttpContextAccessor();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -96,6 +100,9 @@ else
 }
 
 app.UseRouting();
+
+// Enable static file serving for images
+app.UseStaticFiles();
 
 app.UseCors(corsPolicyName);
 

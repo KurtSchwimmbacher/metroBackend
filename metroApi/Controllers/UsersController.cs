@@ -56,11 +56,11 @@ namespace metroApi.Controllers
                 // Check if user has a cart, if not create one
                 if (existingUser.Cart == null)
                 {
-                    var cart = new Cart
+                    var userCart = new Cart
                     {
                         UserId = existingUser.Id
                     };
-                    _context.Carts.Add(cart);
+                    _context.Carts.Add(userCart);
                 }
                 
                 await _context.SaveChangesAsync();
@@ -71,11 +71,11 @@ namespace metroApi.Controllers
             await _context.SaveChangesAsync();
 
             // Create a cart for the new user
-            var cart = new Cart
+            var newUserCart = new Cart
             {
                 UserId = user.Id
             };
-            _context.Carts.Add(cart);
+            _context.Carts.Add(newUserCart);
             await _context.SaveChangesAsync();
 
             return CreatedAtAction(nameof(GetUser), new { firebaseUserId = user.FirebaseUserId }, user);
