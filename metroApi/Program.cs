@@ -61,6 +61,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString)
            .UseLazyLoadingProxies(false)); // or true to enable
 
+// Add HttpClient for EmailJS
+builder.Services.AddHttpClient<OrderEmailController>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>

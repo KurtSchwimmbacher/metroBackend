@@ -40,6 +40,36 @@ namespace metroApi.Controllers
             return cart;
         }
 
+        // POST: api/Carts
+        [HttpPost]
+        public async Task<ActionResult<Cart>> CreateCart([FromBody] Cart cart, [FromQuery] string firebaseUserId)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            // Validate user ownership
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.FirebaseUserId == firebaseUserId);
+            if (user == null)
+            {
+                return Unauthorized("Invalid Firebase UID");
+            }
+
+            // Check if user already has a cart
+            var existingCart = await _context.Carts.FirstOrDefaultAsync(c => c.UserId == user.Id);
+            if (existingCart != null)
+            {
+                return Conflict("User already has a cart");
+            }
+
+            cart.UserId = user.Id;
+            _context.Carts.Add(cart);
+            await _context.SaveChangesAsync();
+
+            return CreatedAtAction(nameof(GetCart), new { userId = cart.UserId, firebaseUserId }, cart);
+        }
+
         // POST: api/Carts/add-item
         [HttpPost("add-item")]
         public async Task<ActionResult<CartItem>> AddItemToCart([FromBody] CartItem item, [FromQuery] string firebaseUserId)
