@@ -4,7 +4,7 @@ using Microsoft.OpenApi.Models;
 using Npgsql;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Http.Json;
-using metroApi.Controllers;
+using metroApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -62,8 +62,11 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString)
            .UseLazyLoadingProxies(false)); // or true to enable
 
-// Add HttpClient for EmailJS
-builder.Services.AddHttpClient<OrderEmailController>();
+// Add HttpClient for Brevo
+builder.Services.AddHttpClient<BrevoEmailService>();
+
+// Add Brevo service
+builder.Services.AddScoped<BrevoEmailService>();
 
 // Add HttpContextAccessor for image URL generation
 builder.Services.AddHttpContextAccessor();
