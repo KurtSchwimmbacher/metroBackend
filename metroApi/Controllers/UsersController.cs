@@ -44,6 +44,7 @@ namespace metroApi.Controllers
             }
 
             var existingUser = await _context.Users
+                .Include(u => u.Cart)
                 .FirstOrDefaultAsync(u => u.FirebaseUserId == user.FirebaseUserId);
 
             if (existingUser != null)
@@ -51,11 +52,30 @@ namespace metroApi.Controllers
                 existingUser.Email = user.Email;
                 existingUser.FullName = user.FullName;
                 // Update other fields as needed
+                
+                // Check if user has a cart, if not create one
+                if (existingUser.Cart == null)
+                {
+                    var cart = new Cart
+                    {
+                        UserId = existingUser.Id
+                    };
+                    _context.Carts.Add(cart);
+                }
+                
                 await _context.SaveChangesAsync();
                 return Ok(existingUser);
             }
 
             _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+
+            // Create a cart for the new user
+            var cart = new Cart
+            {
+                UserId = user.Id
+            };
+            _context.Carts.Add(cart);
             await _context.SaveChangesAsync();
 
             return CreatedAtAction(nameof(GetUser), new { firebaseUserId = user.FirebaseUserId }, user);
